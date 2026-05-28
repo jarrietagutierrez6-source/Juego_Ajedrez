@@ -11,17 +11,28 @@ import sys
 from pygame.locals import *
 from tablero import tablero, resaltar_casilla, obtener_casilla
 from pieza import Pieza
+from temporizador import (
+    TIEMPO_INICIAL,
+    actualizar_temporizador,
+    dibujar_panel_info,
+    mostrar_fin_tiempo
+)
 
 #Crear mi repositorio en GitHub y subir mi proyecto a GitHub debe ser publico.
 #Enviar Link de mi proyecto de GitHub al docente.
 
 
 # Configuración
-ANCHO = 680
-ALTO = 680
-TAMAÑO_CELDA = 85
-TAMAÑO_PIEZA = 75
 
+TAMAÑO_CELDA = 75
+TAMAÑO_PIEZA = 65
+TABLERO_SIZE = TAMAÑO_CELDA * 8  # 680 pixels (el tablero de 8x8)
+PANEL_ALTO = 100  # Altura del panel inferior
+ANCHO = TABLERO_SIZE  # 680
+ALTO = TABLERO_SIZE + PANEL_ALTO  # 780 (tablero + panel debajo)
+
+# Configuración del temporizador (en segundos)
+TIEMPO_INICIAL = 600  # 10 minutos por jugador
 
 def cargar_imagen(ruta):
     """Carga y escala una imagen de pieza"""
@@ -114,17 +125,53 @@ def main():
     pieza_seleccionada = None
     movimientos_validos = []
     turno = 'blanco'  # Empiezan las blancas
+    juego_terminado = False
+    ganador = None
 
-    # Fuente para mostrar el turno
-    font = pygame.font.SysFont("Arial", 20)
+    # Temporizadores (en segundos)
+    tiempo_blanco = TIEMPO_INICIAL
+    tiempo_negro = TIEMPO_INICIAL
+    ultimo_tick = pygame.time.get_ticks()
+
+    # Fuentes
+    font_grande = pygame.font.SysFont("Arial", 28, bold=True)
+    font_normal = pygame.font.SysFont("Arial", 18)
 
     while True:
+        # Calcular delta time para el temporizador
+        tick_actual = pygame.time.get_ticks()
+        delta_tiempo = (tick_actual - ultimo_tick) / 1000.0  # Convertir a segundos
+        ultimo_tick = tick_actual
+
+        # Actualizar temporizador del jugador actual (solo si el juego no ha terminado)
+        if not juego_terminado:
+            tiempo_blanco, tiempo_negro, juego_terminado, ganador = actualizar_temporizador(
+                turno, tiempo_blanco, tiempo_negro, delta_tiempo
+            )
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == MOUSEBUTTONDOWN:
+            # Teclas para reiniciar o salir
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+                if event.key == K_SPACE and juego_terminado:
+                    # Reiniciar juego
+                    piezas = crear_piezas()
+                    pieza_seleccionada = None
+                    movimientos_validos = []
+                    turno = 'blanco'
+                    tiempo_blanco = TIEMPO_INICIAL
+                    tiempo_negro = TIEMPO_INICIAL
+                    juego_terminado = False
+                    ganador = None
+                    ultimo_tick = pygame.time.get_ticks()
+
+            if event.type == MOUSEBUTTONDOWN and not juego_terminado:
                 pos_mouse = pygame.mouse.get_pos()
                 casilla = obtener_casilla(pos_mouse, TAMAÑO_CELDA)
 
@@ -192,12 +239,13 @@ def main():
         for pieza in piezas:
             pieza.dibujar(screen)
 
-        # Mostrar turno actual
-        texto_turno = f"Turno: {'Blancas' if turno == 'blanco' else 'Negras'}"
-        texto_surface = font.render(texto_turno, True, (255, 255, 255))
-        # Fondo para el texto
-        pygame.draw.rect(screen, (0, 0, 0), (5, ALTO - 30, 150, 25))
-        screen.blit(texto_surface, (10, ALTO - 28))
+        # Dibujar panel de información con turnos y temporizadores
+                # Dibujar panel de información debajo del tablero
+        dibujar_panel_info(screen, turno, tiempo_blanco, tiempo_negro, font_grande, font_normal, ANCHO, ALTO, PANEL_ALTO, TABLERO_SIZE)
+
+        # Mostrar pantalla de fin de juego si el tiempo se acabó
+        if juego_terminado:
+            mostrar_fin_tiempo(screen, ganador, ANCHO, ALTO)
 
         pygame.display.flip()
         clock.tick(60)
@@ -205,3 +253,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
