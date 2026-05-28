@@ -3,146 +3,205 @@
 # Activar el entorno virtual:
 # En Windows:
 # mi_entorno\Scripts\activate.ps1
-
 #instalar pygame en el entorno virtual:
 # pip install pygame
-
 #importamos pygame y sys para manejar eventos y salir del juego
-from sre_constants import BRANCH
-from token import RARROW
-
-import pygame, sys 
+import pygame
+import sys
 from pygame.locals import *
-from tablero import*
+from tablero import tablero, resaltar_casilla, obtener_casilla
+from pieza import Pieza
+
 #Crear mi repositorio en GitHub y subir mi proyecto a GitHub debe ser publico.
 #Enviar Link de mi proyecto de GitHub al docente.
 
+
+# Configuración
+ANCHO = 680
+ALTO = 680
+TAMAÑO_CELDA = 85
+TAMAÑO_PIEZA = 75
+
+
+def cargar_imagen(ruta):
+    """Carga y escala una imagen de pieza"""
+    try:
+        imagen = pygame.image.load(ruta)
+        return pygame.transform.scale(imagen, (TAMAÑO_PIEZA, TAMAÑO_PIEZA))
+    except pygame.error:
+        # Si no se encuentra la imagen, crear un placeholder
+        superficie = pygame.Surface((TAMAÑO_PIEZA, TAMAÑO_PIEZA), pygame.SRCALPHA)
+        pygame.draw.circle(superficie, (200, 50, 50), (TAMAÑO_PIEZA//2, TAMAÑO_PIEZA//2), TAMAÑO_PIEZA//3)
+        return superficie
+
+
+def crear_piezas():
+    """Crea todas las piezas en sus posiciones iniciales"""
+    piezas = []
+
+    # Cargar imágenes (ajusta los nombres según tus archivos)
+    img_torre_n = cargar_imagen("castiilo1.png")
+    img_caballo_n = cargar_imagen("cab3.png")
+    img_alfil_n = cargar_imagen("alfil3 (2).png")
+    img_reina_n = cargar_imagen("reina3.png")
+    img_rey_n = cargar_imagen("Rey3.png")
+    img_peon_n = cargar_imagen("Peon1.png")
+
+    # Para las piezas blancas usa las mismas imágenes o carga otras si las tienes
+    img_torre_b = cargar_imagen("castiilo1.png")
+    img_caballo_b = cargar_imagen("cab3.png")
+    img_alfil_b = cargar_imagen("alfil3 (2).png")
+    img_reina_b = cargar_imagen("reina3.png")
+    img_rey_b = cargar_imagen("Rey3.png")
+    img_peon_b = cargar_imagen("Peon1.png")
+
+    # === PIEZAS NEGRAS (fila 0 y 1) ===
+    # Fila 0: piezas principales negras
+    piezas.append(Pieza('torre', 'negro', img_torre_n, 0, 0, TAMAÑO_CELDA))
+    piezas.append(Pieza('caballo', 'negro', img_caballo_n, 0, 1, TAMAÑO_CELDA))
+    piezas.append(Pieza('alfil', 'negro', img_alfil_n, 0, 2, TAMAÑO_CELDA))
+    piezas.append(Pieza('reina', 'negro', img_reina_n, 0, 3, TAMAÑO_CELDA))
+    piezas.append(Pieza('rey', 'negro', img_rey_n, 0, 4, TAMAÑO_CELDA))
+    piezas.append(Pieza('alfil', 'negro', img_alfil_n, 0, 5, TAMAÑO_CELDA))
+    piezas.append(Pieza('caballo', 'negro', img_caballo_n, 0, 6, TAMAÑO_CELDA))
+    piezas.append(Pieza('torre', 'negro', img_torre_n, 0, 7, TAMAÑO_CELDA))
+
+    # Fila 1: peones negros
+    for col in range(8):
+        piezas.append(Pieza('peon', 'negro', img_peon_n, 1, col, TAMAÑO_CELDA))
+
+    # === PIEZAS BLANCAS (fila 6 y 7) ===
+    # Fila 6: peones blancos
+    for col in range(8):
+        piezas.append(Pieza('peon', 'blanco', img_peon_b, 6, col, TAMAÑO_CELDA))
+
+    # Fila 7: piezas principales blancas
+    piezas.append(Pieza('torre', 'blanco', img_torre_b, 7, 0, TAMAÑO_CELDA))
+    piezas.append(Pieza('caballo', 'blanco', img_caballo_b, 7, 1, TAMAÑO_CELDA))
+    piezas.append(Pieza('alfil', 'blanco', img_alfil_b, 7, 2, TAMAÑO_CELDA))
+    piezas.append(Pieza('reina', 'blanco', img_reina_b, 7, 3, TAMAÑO_CELDA))
+    piezas.append(Pieza('rey', 'blanco', img_rey_b, 7, 4, TAMAÑO_CELDA))
+    piezas.append(Pieza('alfil', 'blanco', img_alfil_b, 7, 5, TAMAÑO_CELDA))
+    piezas.append(Pieza('caballo', 'blanco', img_caballo_b, 7, 6, TAMAÑO_CELDA))
+    piezas.append(Pieza('torre', 'blanco', img_torre_b, 7, 7, TAMAÑO_CELDA))
+
+    return piezas
+
+
+def obtener_tablero_piezas(piezas):
+    """Crea un diccionario {(fila, col): pieza} para consultas rápidas"""
+    return {(p.fila, p.col): p for p in piezas}
+
+
+def obtener_pieza_en_posicion(piezas, fila, col):
+    """Devuelve la pieza en una posición específica o None"""
+    for pieza in piezas:
+        if pieza.fila == fila and pieza.col == col:
+            return pieza
+    return None
+
+
 def main():
     pygame.init()
-    ANCHO = 680
-    ALTO = 680
     screen = pygame.display.set_mode((ANCHO, ALTO))
-    pygame.display.set_caption("Mi primer juego en Python")
+    pygame.display.set_caption("Ajedrez - Pygame")
     clock = pygame.time.Clock()
-    imagen_pieza1 = pygame.image.load("castillo.png")
-    imagen_pieza2 = pygame.image.load("reina.png")
-    imagen_pieza3 = pygame.image.load("cab.png")
-    imagen_pieza4 = pygame.image.load("alfin (1).png")
-    imagen_pieza5 = pygame.image.load("rey.png")
-    imagen_pieza6 = pygame.image.load("alfin (1).png")
-    imagen_pieza7 = pygame.image.load("cab.png")
-    imagen_pieza8 = pygame.image.load("castillo.png")
-    imagen_pieza9 = pygame.image.load("peon.png")
-    imagen_pieza10 = pygame.image.load("peon.png")
-    imagen_pieza11 = pygame.image.load("peon.png")
-    imagen_pieza12 = pygame.image.load("peon.png")
-    imagen_pieza13 = pygame.image.load("peon.png")
-    imagen_pieza14 = pygame.image.load("peon.png")
-    imagen_pieza15 = pygame.image.load("peon.png")
-    imagen_pieza16 = pygame.image.load("peon.png")
-    imagen_pieza17 = pygame.image.load("castillo.png")
-    imagen_pieza18 = pygame.image.load("cab.png")
-    imagen_pieza19 = pygame.image.load("alfin (1).png")
-    imagen_pieza20 = pygame.image.load("rey.png")
-    imagen_pieza21 = pygame.image.load("reina.png")
-    imagen_pieza22 = pygame.image.load("alfin (1).png")
-    imagen_pieza23 = pygame.image.load("cab.png")
-    imagen_pieza24 = pygame.image.load("castillo.png")
-    imagen_pieza25 = pygame.image.load("peon.png")
-    imagen_pieza26 = pygame.image.load("peon.png")
-    imagen_pieza27 = pygame.image.load("peon.png")
-    imagen_pieza28 = pygame.image.load("peon.png")
-    imagen_pieza29 = pygame.image.load("peon.png")
-    imagen_pieza30 = pygame.image.load("peon.png")
-    imagen_pieza31 = pygame.image.load("peon.png")
-    imagen_pieza32 = pygame.image.load("peon.png")
 
-    imagen_pieza1 = pygame.transform.scale(imagen_pieza1, (75, 75))
-    imagen_pieza2 = pygame.transform.scale(imagen_pieza2, (75, 75))
-    imagen_pieza3 = pygame.transform.scale(imagen_pieza3, (75, 75))
-    imagen_pieza4 = pygame.transform.scale(imagen_pieza4, (75, 75))
-    imagen_pieza5 = pygame.transform.scale(imagen_pieza5, (75, 75))
-    imagen_pieza6 = pygame.transform.scale(imagen_pieza6, (75, 75))
-    imagen_pieza7 = pygame.transform.scale(imagen_pieza7, (75, 75))
-    imagen_pieza8 = pygame.transform.scale(imagen_pieza8, (75, 75))
-    imagen_pieza9 = pygame.transform.scale(imagen_pieza9, (75, 75))
-    imagen_pieza10 = pygame.transform.scale(imagen_pieza10, (75, 75))
-    imagen_pieza11 = pygame.transform.scale(imagen_pieza11, (75, 75))
-    imagen_pieza12 = pygame.transform.scale(imagen_pieza12, (75, 75))
-    imagen_pieza13 = pygame.transform.scale(imagen_pieza13,(75, 75))
-    imagen_pieza14 = pygame.transform.scale(imagen_pieza14, (75, 75))
-    imagen_pieza15 = pygame.transform.scale(imagen_pieza15, (75, 75))
-    imagen_pieza16 = pygame.transform.scale(imagen_pieza16, (75, 75))
-    imagen_pieza17 = pygame.transform.scale(imagen_pieza17, (75, 75))
-    imagen_pieza18 = pygame.transform.scale(imagen_pieza18, (75, 75))
-    imagen_pieza19 = pygame.transform.scale(imagen_pieza19, (75, 75))
-    imagen_pieza20 = pygame.transform.scale(imagen_pieza20, (75, 75))
-    imagen_pieza21 = pygame.transform.scale(imagen_pieza21, (75, 75))
-    imagen_pieza22 = pygame.transform.scale(imagen_pieza22, (75, 75))
-    imagen_pieza23 = pygame.transform.scale(imagen_pieza23, (75, 75))
-    imagen_pieza24 = pygame.transform.scale(imagen_pieza24, (75, 75))
-    imagen_pieza25 = pygame.transform.scale(imagen_pieza25, (75, 75))
-    imagen_pieza26 = pygame.transform.scale(imagen_pieza26, (75, 75))
-    imagen_pieza27 = pygame.transform.scale(imagen_pieza27, (75, 75))
-    imagen_pieza28 = pygame.transform.scale(imagen_pieza28, (75, 75))
-    imagen_pieza29 = pygame.transform.scale(imagen_pieza29, (75, 75))
-    imagen_pieza30 = pygame.transform.scale(imagen_pieza30, (75, 75))
-    imagen_pieza31 = pygame.transform.scale(imagen_pieza31, (75, 75))
-    imagen_pieza32 = pygame.transform.scale(imagen_pieza32, (75, 75))
+    # Crear las piezas
+    piezas = crear_piezas()
+
+    # Estado del juego
+    pieza_seleccionada = None
+    movimientos_validos = []
+    turno = 'blanco'  # Empiezan las blancas
+
+    # Fuente para mostrar el turno
+    font = pygame.font.SysFont("Arial", 20)
 
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-                
-        screen.fill((255, 255, 255))
-        #pygame.draw.circle(screen, (15, 32, 30), (42, 45,), 30)
-        # pygame.draw.circle(screen, (2, 200, 90), (212, 45), 30)
-        #pygame.draw.circle(screen, (255, 32, 30), (380, 45), 30)
-        font = pygame.font.SysFont("Arial", 30)
-        mitexto = font.render("", True, RARROW)
 
-        text_rect = mitexto.get_rect()
-        text_rect.center = (ANCHO // 2, ALTO // 2)
-        screen.blit(mitexto, text_rect)
-        tablero(screen,85)
-        screen.blit(imagen_pieza1, (5, 5))  # esquina superior izquierda
-        screen.blit(imagen_pieza2, (345, 5))
-        screen.blit(imagen_pieza3, (90, 5))
-        screen.blit(imagen_pieza4, (179, 5))
-        screen.blit(imagen_pieza5, (260, 5))
-        screen.blit(imagen_pieza6, (430, 5))
-        screen.blit(imagen_pieza7, (510, 5))
-        screen.blit(imagen_pieza8, (600, 5))
-        screen.blit(imagen_pieza9, (5, 90))
-        screen.blit(imagen_pieza10, (85, 90))
-        screen.blit(imagen_pieza11, (175, 90))
-        screen.blit(imagen_pieza12, (260, 90))
-        screen.blit(imagen_pieza13, (345, 90))
-        screen.blit(imagen_pieza14, (430, 90))
-        screen.blit(imagen_pieza15, (515, 90))
-        screen.blit(imagen_pieza16, (602, 90))
-        screen.blit(imagen_pieza17, (5, 600))
-        screen.blit(imagen_pieza18, (85, 600))
-        screen.blit(imagen_pieza19, (175, 600))
-        screen.blit(imagen_pieza20, (260, 600))
-        screen.blit(imagen_pieza21, (345, 600))
-        screen.blit(imagen_pieza22, (430, 600))
-        screen.blit(imagen_pieza23, (515, 600))
-        screen.blit(imagen_pieza24, (602, 600))
-        screen.blit(imagen_pieza25, (5, 515))
-        screen.blit(imagen_pieza26, (90, 515))
-        screen.blit(imagen_pieza27, (175, 515))
-        screen.blit(imagen_pieza28, (260, 515))
-        screen.blit(imagen_pieza29, (345, 515))
-        screen.blit(imagen_pieza30, (430, 515))
-        screen.blit(imagen_pieza31, (515, 515))
-        screen.blit(imagen_pieza32, (602, 515))
+            if event.type == MOUSEBUTTONDOWN:
+                pos_mouse = pygame.mouse.get_pos()
+                casilla = obtener_casilla(pos_mouse, TAMAÑO_CELDA)
 
-        
+                if casilla:
+                    fila, col = casilla
+                    pieza_clickeada = obtener_pieza_en_posicion(piezas, fila, col)
+
+                    # Si hay una pieza seleccionada y se clickea en un movimiento válido
+                    if pieza_seleccionada and (fila, col) in movimientos_validos:
+                        # Verificar si hay una pieza enemiga para capturar
+                        pieza_capturada = obtener_pieza_en_posicion(piezas, fila, col)
+                        if pieza_capturada:
+                            piezas.remove(pieza_capturada)
+
+                        # Mover la pieza
+                        pieza_seleccionada.mover_a(fila, col)
+                        pieza_seleccionada.seleccionada = False
+                        pieza_seleccionada = None
+                        movimientos_validos = []
+
+                        # Cambiar turno
+                        turno = 'negro' if turno == 'blanco' else 'blanco'
+
+                    # Si se clickea en una pieza propia, seleccionarla
+                    elif pieza_clickeada and pieza_clickeada.color == turno:
+                        # Deseleccionar pieza anterior
+                        if pieza_seleccionada:
+                            pieza_seleccionada.seleccionada = False
+
+                        # Seleccionar nueva pieza
+                        pieza_seleccionada = pieza_clickeada
+                        pieza_seleccionada.seleccionada = True
+                        tablero_piezas = obtener_tablero_piezas(piezas)
+                        movimientos_validos = pieza_seleccionada.obtener_movimientos_validos(tablero_piezas)
+
+                    # Si se clickea en otro lugar, deseleccionar
+                    else:
+                        if pieza_seleccionada:
+                            pieza_seleccionada.seleccionada = False
+                        pieza_seleccionada = None
+                        movimientos_validos = []
+
+        # === DIBUJAR ===
+        screen.fill((50, 50, 50))
+
+        # Dibujar tablero
+        tablero(screen, TAMAÑO_CELDA)
+
+        # Resaltar casilla de pieza seleccionada
+        if pieza_seleccionada:
+            resaltar_casilla(screen, pieza_seleccionada.fila, pieza_seleccionada.col,
+                           TAMAÑO_CELDA, (255, 255, 0, 100))  # Amarillo
+
+        # Resaltar movimientos válidos
+        for fila, col in movimientos_validos:
+            pieza_en_destino = obtener_pieza_en_posicion(piezas, fila, col)
+            if pieza_en_destino:
+                # Casilla con pieza enemiga (captura) - rojo
+                resaltar_casilla(screen, fila, col, TAMAÑO_CELDA, (255, 100, 100, 150))
+            else:
+                # Casilla vacía - verde
+                resaltar_casilla(screen, fila, col, TAMAÑO_CELDA, (100, 255, 100, 150))
+
+        # Dibujar piezas
+        for pieza in piezas:
+            pieza.dibujar(screen)
+
+        # Mostrar turno actual
+        texto_turno = f"Turno: {'Blancas' if turno == 'blanco' else 'Negras'}"
+        texto_surface = font.render(texto_turno, True, (255, 255, 255))
+        # Fondo para el texto
+        pygame.draw.rect(screen, (0, 0, 0), (5, ALTO - 30, 150, 25))
+        screen.blit(texto_surface, (10, ALTO - 28))
+
         pygame.display.flip()
         clock.tick(60)
-        
+
+
 if __name__ == "__main__":
- main()
+    main()
