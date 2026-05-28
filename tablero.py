@@ -22,3 +22,19 @@ def tablero(pantalla, tamaño_celda):
                 rect = (col * tamaño_celda, fila * tamaño_celda, tamaño_celda, tamaño_celda)
                 pygame.draw.rect(pantalla, color, rect)
                 
+def resaltar_casilla(pantalla, fila, col, tamaño_celda, color=(100, 200, 100, 128)):
+    """Resalta una casilla específica del tablero"""
+    superficie = pygame.Surface((tamaño_celda, tamaño_celda), pygame.SRCALPHA)
+    superficie.fill(color)
+    pantalla.blit(superficie, (col * tamaño_celda, fila * tamaño_celda))
+
+
+def obtener_casilla(pos_mouse, tamaño_celda):
+    """Convierte posición del mouse a coordenadas del tablero (fila, columna)"""
+    x, y = pos_mouse
+    col = x // tamaño_celda
+    fila = y // tamaño_celda
+    if 0 <= fila < 8 and 0 <= col < 8:
+        return (fila, col)
+    return None
+                
