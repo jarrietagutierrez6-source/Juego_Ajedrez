@@ -17,22 +17,17 @@ from temporizador import (
     dibujar_panel_info,
     mostrar_fin_tiempo
 )
-
-#Crear mi repositorio en GitHub y subir mi proyecto a GitHub debe ser publico.
-#Enviar Link de mi proyecto de GitHub al docente.
+from animacion import GestorExplosiones
 
 
 # Configuración
-
-TAMAÑO_CELDA = 75
-TAMAÑO_PIEZA = 65
+TAMAÑO_CELDA = 85
+TAMAÑO_PIEZA = 75
 TABLERO_SIZE = TAMAÑO_CELDA * 8  # 680 pixels (el tablero de 8x8)
 PANEL_ALTO = 100  # Altura del panel inferior
 ANCHO = TABLERO_SIZE  # 680
 ALTO = TABLERO_SIZE + PANEL_ALTO  # 780 (tablero + panel debajo)
 
-# Configuración del temporizador (en segundos)
-TIEMPO_INICIAL = 600  # 10 minutos por jugador
 
 def cargar_imagen(ruta):
     """Carga y escala una imagen de pieza"""
@@ -133,6 +128,9 @@ def main():
     tiempo_negro = TIEMPO_INICIAL
     ultimo_tick = pygame.time.get_ticks()
 
+    # Gestor de animaciones de explosión (al capturar piezas)
+    gestor_explosiones = GestorExplosiones()
+
     # Fuentes
     font_grande = pygame.font.SysFont("Arial", 28, bold=True)
     font_normal = pygame.font.SysFont("Arial", 18)
@@ -170,6 +168,7 @@ def main():
                     juego_terminado = False
                     ganador = None
                     ultimo_tick = pygame.time.get_ticks()
+                    gestor_explosiones = GestorExplosiones()
 
             if event.type == MOUSEBUTTONDOWN and not juego_terminado:
                 pos_mouse = pygame.mouse.get_pos()
@@ -184,6 +183,8 @@ def main():
                         # Verificar si hay una pieza enemiga para capturar
                         pieza_capturada = obtener_pieza_en_posicion(piezas, fila, col)
                         if pieza_capturada:
+                            # Crear animación de explosión en la casilla de la captura
+                            gestor_explosiones.crear_explosion(fila, col, TAMAÑO_CELDA)
                             piezas.remove(pieza_capturada)
 
                         # Mover la pieza
@@ -239,8 +240,11 @@ def main():
         for pieza in piezas:
             pieza.dibujar(screen)
 
-        # Dibujar panel de información con turnos y temporizadores
-                # Dibujar panel de información debajo del tablero
+        # Actualizar y dibujar las explosiones (encima de las piezas)
+        gestor_explosiones.actualizar()
+        gestor_explosiones.dibujar(screen)
+
+        # Dibujar panel de información debajo del tablero
         dibujar_panel_info(screen, turno, tiempo_blanco, tiempo_negro, font_grande, font_normal, ANCHO, ALTO, PANEL_ALTO, TABLERO_SIZE)
 
         # Mostrar pantalla de fin de juego si el tiempo se acabó
@@ -253,4 +257,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
 
